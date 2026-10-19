@@ -1,0 +1,65 @@
+services:
+  api:
+    image: ${POS_API_IMAGE:?Set a prebuilt immutable API image reference}
+    environment:
+      POS_ENV: production
+      DATABASE_URL_FILE: /run/secrets/database_url
+      JWT_SECRET_KEY_FILE: /run/secrets/jwt_secret_key
+      POS_CORS_ORIGINS: ${POS_CORS_ORIGINS:?Set exact HTTPS frontend origins}
+      POS_TRUSTED_HOSTS: ${POS_TRUSTED_HOSTS:?Set exact API hostnames}
+      POS_LOG_LEVEL: ${POS_LOG_LEVEL:-INFO}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
+      DB_MAX_OVERFLOW: ${DB_MAX_OVERFLOW:-10}
+      DB_POOL_TIMEOUT_SECONDS: ${DB_POOL_TIMEOUT_SECONDS:-30}
+      DB_POOL_RECYCLE_SECONDS: ${DB_POOL_RECYCLE_SECONDS:-1800}
+    ports:
+      - "127.0.0.1:${API_BIND_PORT:-8000}:8000"
+    secrets:
+      - database_url
+      - jwt_secret_key
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  migrate:
+    image: ${POS_API_IMAGE:?Set a prebuilt immutable API image reference}
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      POS_ENV: production
+      DATABASE_URL_FILE: /run/secrets/database_url
+    secrets:
+      - database_url
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    profiles: ["migration"]
+
+secrets:
+  database_url:
+    file: ${DATABASE_URL_SECRET_FILE:?Set path to the injected database URL secret file}
+  jwt_secret_key:
+    file: ${JWT_SECRET_SECRET_FILE:?Set path to the injected JWT secret file}

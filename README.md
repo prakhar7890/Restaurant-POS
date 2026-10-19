@@ -117,9 +117,13 @@ Payment/refund requests use idempotency keys, and bills are not overwritten
 when corrected; the original records remain. The desktop access token is held
 in memory; users must enter a pre-registered device UUID to sign in. There is
 no public user provisioning or first-admin/device bootstrap workflow. Offline
-order capture/synchronization and backup automation remain unimplemented.
+order capture/synchronization and scheduled backup/retention automation remain
+unimplemented. Authorized managers can create verified PostgreSQL custom
+archives through the API; isolated restores are performed only by the
+confirmation-gated Windows PowerShell procedure in
+[Operations runbook](docs/operations.md), not by an API restore route.
 The project has not been validated against PostgreSQL concurrency or
-production deployment, does not provide evidence of backup restoration or
-jurisdiction-specific tax compliance, and has no provider-verified payment
-acceptance. Do not load real restaurant or customer data or use this release
-for sales.
+production deployment, and does not provide evidence that an isolated backup
+restore has actually been completed or of jurisdiction-specific tax
+compliance. Payments remain manually recorded and are not provider-verified.
+Do not load real restaurant or customer data or use this release for sales.

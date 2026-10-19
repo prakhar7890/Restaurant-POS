@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:16.9-alpine3.22
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-restaurant_pos}
+      POSTGRES_USER: ${POSTGRES_USER:-pos_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-only-change-me}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      POS_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://pos_dev:local-only-change-me@db:5432/restaurant_pos}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-development-only-secret-change-this-before-use-123456}
+      POS_CORS_ORIGINS: ${POS_CORS_ORIGINS:-http://localhost:1420,http://127.0.0.1:1420,http://localhost:8081,http://127.0.0.1:8081}
+      POS_TRUSTED_HOSTS: ${POS_TRUSTED_HOSTS:-localhost,127.0.0.1}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"
+      interval: 15s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      POS_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://pos_dev:local-only-change-me@db:5432/restaurant_pos}
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["tools"]
+
+volumes:
+  postgres_data:

@@ -1,0 +1,22 @@
+{
+  "name": "restaurant-pos",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev:desktop": "pnpm --filter @restaurant-pos/desktop tauri dev",
+    "dev:mobile": "pnpm --filter @restaurant-pos/mobile start",
+    "test": "vitest run",
+    "test:backend": "uv run --project backend pytest",
+    "lint": "uv run --project backend ruff check backend && corepack pnpm --filter @restaurant-pos/desktop exec tsc --noEmit && corepack pnpm --filter @restaurant-pos/mobile exec tsc --noEmit",
+    "format": "prettier --write \"**/*.{md,mdx,json,jsonc,yaml,yml,ts,tsx,js,jsx,css,html}\"",
+    "format:check": "prettier --check \"**/*.{md,mdx,json,jsonc,yaml,yml,ts,tsx,js,jsx,css,html}\" && uv run --project backend ruff format --check backend"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "vitest": "^5.0.5"
+  }
+}
